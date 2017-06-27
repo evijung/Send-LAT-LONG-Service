@@ -1,4 +1,4 @@
-package com.th.samsen.tunyaporn.servicegpscheck;
+package com.hitachi_tstv.mist.it.gps_pxd;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
