@@ -3,6 +3,7 @@ package com.hitachi_tstv.mist.it.gps_pxd;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.crashlytics.android.Crashlytics;
 
@@ -18,5 +19,6 @@ public class MainActivity extends AppCompatActivity {
         Intent serviceIntent = new Intent(MainActivity.this, AutoStartup.class);
         this.startService(serviceIntent);
     }
+
 }
 

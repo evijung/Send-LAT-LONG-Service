@@ -21,7 +21,6 @@ import com.squareup.okhttp.FormEncodingBuilder;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.RequestBody;
-import com.squareup.okhttp.Response;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -31,7 +30,6 @@ import java.util.Locale;
 public class AutoStartup extends Service {
 
     private LocationManager locationManager;
-    private Criteria criteria;
     private String latString, longString, urlString;
     final String link = "http://203.154.103.43/";
     final String project = "TmsPxd";
@@ -50,13 +48,6 @@ public class AutoStartup extends Service {
 
 
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
                 return null;
             }
             locationManager.requestLocationUpdates(strProvider, 1000, 10, locationListener);
@@ -73,8 +64,6 @@ public class AutoStartup extends Service {
     public final LocationListener locationListener = new LocationListener() {
         @Override
         public void onLocationChanged(Location location) {
-//            latTextView.setText(String.format("%.7f", location.getLatitude()));
-//            lngTextView.setText(String.format("%.7f", location.getLongitude()));
         }
 
         @Override
@@ -96,7 +85,7 @@ public class AutoStartup extends Service {
     private void setupLocation() {
 
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        criteria = new Criteria();
+        Criteria criteria = new Criteria();
         criteria.setAccuracy(Criteria.ACCURACY_FINE);
         criteria.setAltitudeRequired(false);
         criteria.setBearingRequired(false);
@@ -105,7 +94,7 @@ public class AutoStartup extends Service {
     }   // setupLocation
 
     public boolean setLatLong(int rev) {
-        boolean b = false;
+        boolean b = true;
         boolean result = false;
 
         do {
@@ -114,35 +103,31 @@ public class AutoStartup extends Service {
             setupLocation();
             Location networkLocation = requestLocation(LocationManager.NETWORK_PROVIDER, "No Internet");
             if (networkLocation != null) {
-                strLat = String.format("%.7f", networkLocation.getLatitude());
-                strLng = String.format("%.7f", networkLocation.getLongitude());
+                strLat = String.format(new Locale("th"), "%.7f", networkLocation.getLatitude());
+                strLng = String.format(new Locale("th"), "%.7f", networkLocation.getLongitude());
             }
 
             Location gpsLocation = requestLocation(LocationManager.GPS_PROVIDER, "No GPS card");
             if (gpsLocation != null) {
-                strLat = String.format("%.7f", gpsLocation.getLatitude());
-                strLng = String.format("%.7f", gpsLocation.getLongitude());
+                strLat = String.format(new Locale("th"), "%.7f", gpsLocation.getLatitude());
+                strLng = String.format(new Locale("th"), "%.7f", gpsLocation.getLongitude());
             }
 
             if (strLat.equals("Unknown") && strLng.equals("Unknown") && rev < 10) {
-                rev++;
-                b = true;
 
-                Log.d("ServiceTag", "Repeat ");
+                Log.d("ServiceTag", "Repeat");
             } else if (strLat.equals("Unknown") && strLng.equals("Unknown") && rev >= 10) {
                 //Can't get lat/long
-                Log.d("ServiceTag", "Can't get lat/long ");
+                Log.d("ServiceTag", "Can't get lat/long");
                 rev++;
                 b = false;
-            }else {
+            } else {
                 latString = strLat;
                 longString = strLng;
                 b = false;
                 result = true;
             }
         } while (b);
-
-
 
 
         return result;
@@ -157,11 +142,9 @@ public class AutoStartup extends Service {
 
     private class SynSendLatLng extends AsyncTask<Void, Void, Void> {
 
-        private Context context;
         private String dateString, latString, lngString, deviceNameString;
 
-        public SynSendLatLng(Context context, String dateString, String latString, String lngString, String deviceNameString) {
-            this.context = context;
+        SynSendLatLng(String dateString, String latString, String lngString, String deviceNameString) {
             this.dateString = dateString;
             this.latString = latString;
             this.lngString = lngString;
@@ -171,17 +154,22 @@ public class AutoStartup extends Service {
         @Override
         protected Void doInBackground(Void... voids) {
             try {
+                if (latString == null) {
+                    latString = "";
+                }
+                if (lngString == null) {
+                    lngString = "";
+                }
                 OkHttpClient okHttpClient = new OkHttpClient();
                 RequestBody requestBody = new FormEncodingBuilder()
-                        .add("isAdd","true")
+                        .add("isAdd", "true")
                         .add("gps_timeStamp", dateString)
                         .add("gps_lat", latString)
                         .add("gps_lon", lngString)
                         .add("device_name", deviceNameString).build();
                 Request.Builder builder = new Request.Builder();
                 Request request = builder.post(requestBody).url(urlString).build();
-                Response response = okHttpClient.newCall(request).execute();
-
+                okHttpClient.newCall(request).execute();
 
             } catch (IOException e) {
 
@@ -192,21 +180,19 @@ public class AutoStartup extends Service {
         }
     }
 
-
     private void repeat() {
         Log.d("ServiceTag", "PXD On Loop 5 minutes");
         BluetoothAdapter myDevice = BluetoothAdapter.getDefaultAdapter();
         String deviceString = myDevice.getName();
         Log.d("ServiceTag", "DEVICE ==> " + deviceString);
-
         Log.d("ServiceTag", "Lat ==> " + latString + " Long ==> " + longString);
         Log.d("ServiceTag", "Date Time ==> " + getDateTime());
 
         if (setLatLong(0)) {
-            SynSendLatLng synSendLatLng = new SynSendLatLng(this, getDateTime(), latString, longString, deviceString);
+            SynSendLatLng synSendLatLng = new SynSendLatLng(getDateTime(), latString, longString, deviceString);
             synSendLatLng.execute();
         } else {
-            SynSendLatLng synSendLatLng = new SynSendLatLng(this, getDateTime(), latString, longString, deviceString);
+            SynSendLatLng synSendLatLng = new SynSendLatLng(getDateTime(), latString, longString, deviceString);
             synSendLatLng.execute();
         }
 
