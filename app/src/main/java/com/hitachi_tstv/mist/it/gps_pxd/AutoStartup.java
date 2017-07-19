@@ -98,6 +98,7 @@ public class AutoStartup extends Service {
         boolean result = false;
 
         do {
+            Log.d("ServiceTag", "Do");
             String strLat = "Unknown";
             String strLng = "Unknown";
             setupLocation();
@@ -115,6 +116,7 @@ public class AutoStartup extends Service {
 
             if (strLat.equals("Unknown") && strLng.equals("Unknown") && rev < 10) {
 
+                rev++;
                 Log.d("ServiceTag", "Repeat");
             } else if (strLat.equals("Unknown") && strLng.equals("Unknown") && rev >= 10) {
                 //Can't get lat/long
@@ -140,8 +142,8 @@ public class AutoStartup extends Service {
         return dateFormat.format(date);
     }
 
-    private class SynSendLatLng extends AsyncTask<Void, Void, Void> {
 
+    private class SynSendLatLng extends AsyncTask<Void, Void, Void> {
         private String dateString, latString, lngString, deviceNameString;
 
         SynSendLatLng(String dateString, String latString, String lngString, String deviceNameString) {
@@ -172,7 +174,6 @@ public class AutoStartup extends Service {
                 okHttpClient.newCall(request).execute();
 
             } catch (IOException e) {
-
                 Log.d("ServiceTag", "Do In Back ==> " + e.toString());
                 e.printStackTrace();
             }
