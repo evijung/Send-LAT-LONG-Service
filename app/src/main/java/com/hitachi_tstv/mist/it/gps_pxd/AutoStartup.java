@@ -14,8 +14,11 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
+import android.support.annotation.IntDef;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.squareup.okhttp.FormEncodingBuilder;
 import com.squareup.okhttp.OkHttpClient;
@@ -33,7 +36,7 @@ public class AutoStartup extends Service {
     private String latString, longString, urlString;
     final String link = "http://203.154.103.43/";
     final String project = "TmsPxd";
-
+    MyRepeat thread;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -50,7 +53,7 @@ public class AutoStartup extends Service {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 return null;
             }
-            locationManager.requestLocationUpdates(strProvider, 1000, 10, locationListener);
+            locationManager.requestLocationUpdates(strProvider, 1000, 10, locationListener, Looper.getMainLooper());
             location = locationManager.getLastKnownLocation(strProvider);
 
         } else {
@@ -142,7 +145,6 @@ public class AutoStartup extends Service {
         return dateFormat.format(date);
     }
 
-
     private class SynSendLatLng extends AsyncTask<Void, Void, Void> {
         private String dateString, latString, lngString, deviceNameString;
 
@@ -181,31 +183,73 @@ public class AutoStartup extends Service {
         }
     }
 
-    private void repeat() {
-        Log.d("ServiceTag", "PXD On Loop 5 minutes");
-        BluetoothAdapter myDevice = BluetoothAdapter.getDefaultAdapter();
-        String deviceString = myDevice.getName();
-        Log.d("ServiceTag", "DEVICE ==> " + deviceString);
-        Log.d("ServiceTag", "Lat ==> " + latString + " Long ==> " + longString);
-        Log.d("ServiceTag", "Date Time ==> " + getDateTime());
+//    private void repeat() {
+//        Log.d("ServiceTag", "PXD On Loop 5 minutes");
+//        BluetoothAdapter myDevice = BluetoothAdapter.getDefaultAdapter();
+//        String deviceString = myDevice.getName();
+//        Log.d("ServiceTag", "DEVICE ==> " + deviceString);
+//        Log.d("ServiceTag", "Lat ==> " + latString + " Long ==> " + longString);
+//        Log.d("ServiceTag", "Date Time ==> " + getDateTime());
+//
+//        if (setLatLong(0)) {
+//            SynSendLatLng synSendLatLng = new SynSendLatLng(getDateTime(), latString, longString, deviceString);
+//            synSendLatLng.execute();
+//        } else {
+//            SynSendLatLng synSendLatLng = new SynSendLatLng(getDateTime(), latString, longString, deviceString);
+//            synSendLatLng.execute();
+//        }
+//
+//
+//        Handler handler = new Handler();
+//        handler.postDelayed(new Runnable() {
+//
+//            @Override
+//            public void run() {
+//                repeat();
+//            }
+//        }, 300000);
+//    }
 
-        if (setLatLong(0)) {
-            SynSendLatLng synSendLatLng = new SynSendLatLng(getDateTime(), latString, longString, deviceString);
-            synSendLatLng.execute();
-        } else {
-            SynSendLatLng synSendLatLng = new SynSendLatLng(getDateTime(), latString, longString, deviceString);
-            synSendLatLng.execute();
-        }
+    private class MyRepeat extends Thread {
+        @Override
+        public void run() {
+            while (true) {
+                Log.d("ServiceTag", "PXD On Loop 5 minutes");
+                BluetoothAdapter myDevice = BluetoothAdapter.getDefaultAdapter();
+                String deviceString = myDevice.getName();
+                Log.d("ServiceTag", "DEVICE ==> " + deviceString);
+                Log.d("ServiceTag", "Lat ==> " + latString + " Long ==> " + longString);
+                Log.d("ServiceTag", "Date Time ==> " + getDateTime());
 
+                if (setLatLong(0)) {
+                    SynSendLatLng synSendLatLng = new SynSendLatLng(getDateTime(), latString, longString, deviceString);
+                    synSendLatLng.execute();
+                } else {
+                    SynSendLatLng synSendLatLng = new SynSendLatLng(getDateTime(), latString, longString, deviceString);
+                    synSendLatLng.execute();
+                }
 
-        Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
+                try {
+                    sleep(300000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
 
-            @Override
-            public void run() {
-                repeat();
             }
-        }, 300000);
+        }
+    }
+
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        if (!thread.isAlive()) {
+            thread.start();
+        }
+        return START_STICKY;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
     }
 
     @Override
@@ -213,6 +257,6 @@ public class AutoStartup extends Service {
         super.onCreate();
         urlString = link + project + "/app/CenterService/updateRecNow.php";
         Log.d("ServiceTag", "Open Device");
-        repeat();
+        thread = new MyRepeat();
     }
 }
