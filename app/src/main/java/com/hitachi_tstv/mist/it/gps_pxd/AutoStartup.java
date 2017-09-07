@@ -1,6 +1,7 @@
 package com.hitachi_tstv.mist.it.gps_pxd;
 
 import android.Manifest;
+import android.annotation.TargetApi;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Context;
@@ -11,6 +12,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -34,7 +36,7 @@ public class AutoStartup extends Service {
 
     private LocationManager locationManager;
     private String latString, longString, urlString;
-    final String link = "http://203.154.103.43/";
+    final String link = "http://service.eternity.co.th/";
     final String project = "TmsPxd";
     MyRepeat thread;
 
@@ -145,6 +147,7 @@ public class AutoStartup extends Service {
         return dateFormat.format(date);
     }
 
+    @TargetApi(Build.VERSION_CODES.CUPCAKE)
     private class SynSendLatLng extends AsyncTask<Void, Void, Void> {
         private String dateString, latString, lngString, deviceNameString;
 
